@@ -1,6 +1,13 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>AL group</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#f2f2f7; --card:rgba(255,255,255,.66); --card-solid:#ffffff; --text:#1d1d1f; --muted:#6e6e73;
@@ -49,7 +56,9 @@ h2{font-size:19px;margin:0 0 12px;letter-spacing:-.02em}
 .grid{display:grid;gap:12px}
 .g2{grid-template-columns:repeat(2,1fr)}
 .g3{grid-template-columns:repeat(3,1fr)}
-@media(max-width:700px){.g3{grid-template-columns:1fr}.g2.keep{grid-template-columns:1fr 1fr}.g2:not(.keep){grid-template-columns:1fr}}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.g3,.g4{grid-template-columns:1fr}.g2.keep{grid-template-columns:1fr 1fr}.g2:not(.keep){grid-template-columns:1fr}}
 label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:0 0 5px 2px;text-transform:uppercase;letter-spacing:.04em}
 input,select{
   width:100%;font:inherit;font-size:16px;color:var(--text);background:var(--input);border:1px solid transparent;border-radius:12px;padding:12px 14px;outline:none;transition:.2s;appearance:none;-webkit-appearance:none
@@ -92,7 +101,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,30px);opacity:0;background:var(--card-solid);color:var(--text);padding:12px 20px;border-radius:99px;box-shadow:var(--shadow);border:1px solid var(--line);font-size:14px;font-weight:600;transition:.3s;z-index:50;pointer-events:none}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 .split{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:6px}
+.vrow{padding:14px 0;border-bottom:1px solid var(--line)}
+.vrow:last-child{border-bottom:0}
+.vtop{display:flex;align-items:center;gap:12px}
+.num{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;display:grid;place-items:center}
+.vvals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.vvals div{background:var(--input);border-radius:10px;padding:8px 10px}
+.vvals span{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.vvals b{display:block;font-size:15px;margin-top:2px;letter-spacing:-.02em}
+.vtotal{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 0 2px;font-weight:700;border-top:2px solid var(--line);margin-top:4px}
 </style>
+</head>
+<body>
 
 <!-- LOGIN -->
 <section id="login" class="hidden">
@@ -136,7 +156,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div><label>De</label><input type="date" id="dDe"></div>
         <div><label>Até</label><input type="date" id="dAte"></div>
       </div>
-      <div class="grid g3" style="margin-bottom:16px">
+      <div class="grid g4" style="margin-bottom:16px">
+        <div class="glass stat"><div class="k">Investido</div><div class="v" id="sInv">R$ 0,00</div></div>
         <div class="glass stat"><div class="k">Faturamento</div><div class="v" id="sFat">R$ 0,00</div></div>
         <div class="glass stat"><div class="k">Lucro</div><div class="v pos" id="sLucro">R$ 0,00</div></div>
         <div class="glass stat"><div class="k">Vendas / Unidades</div><div class="v" id="sQtd">0</div></div>
@@ -144,6 +165,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="glass card">
         <h2>Quanto cabe a cada sócio</h2>
         <div id="porSocio"></div>
+      </div>
+      <div class="glass card">
+        <h2>Vendas do período</h2>
+        <div id="listaPainel"></div>
       </div>
     </section>
 
@@ -214,12 +239,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </main>
 </div>
 
-<div id="dlg" class="hidden" style="position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.45)">
-  <div class="glass" style="background:var(--card-solid);max-width:340px;width:100%;padding:22px">
-    <div id="dlgMsg" style="font-weight:600;margin-bottom:16px"></div>
-    <div class="grid g2 keep"><button class="btn ghost" id="dlgNo" type="button">Cancelar</button><button class="btn" id="dlgYes" type="button">Excluir</button></div>
-  </div>
-</div>
 <div id="toast"></div>
 
 <script>
@@ -228,13 +247,6 @@ const SUPABASE_URL = "https://fwklhaotcejwdcskwnlp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3a2xoYW90Y2Vqd2Rjc2t3bmxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzMDk5MjUsImV4cCI6MjEwODg4NTkyNX0.qXgXZhDrxZmzKuTNjA8IpdADZZD8m8LrRXokP-v29wA";
 // ==========================
 
-function askConfirm(msg){
-  return new Promise(res => {
-    $("#dlgMsg").textContent = msg; $("#dlg").classList.remove("hidden");
-    const done = v => { $("#dlg").classList.add("hidden"); res(v); };
-    $("#dlgYes").onclick = () => done(true); $("#dlgNo").onclick = () => done(false);
-  });
-}
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -345,7 +357,7 @@ $("#listaProdutos").addEventListener("click", async e => {
     $("#pId").value = p.id; $("#pNome").value = p.nome; $("#pCusto").value = p.preco_custo; $("#pVenda").value = p.preco_venda;
     $("#tituloProduto").textContent = "Editar produto"; previewProduto(); window.scrollTo({top:0, behavior:"smooth"});
   }
-  if (del && await askConfirm("Excluir este produto? As vendas já lançadas continuam no histórico.")) {
+  if (del && confirm("Excluir este produto? As vendas já lançadas continuam no histórico.")) {
     const { error } = await sb.from("produtos").delete().eq("id", del.dataset.delP);
     if (error) toast("Não foi possível excluir."); else { toast("Produto excluído"); carregar(); }
   }
@@ -386,7 +398,7 @@ $("#listaSocios").addEventListener("click", async e => {
     $("#sId").value = s.id; $("#sNome").value = s.nome; $("#sPerc").value = s.percentual;
     $("#tituloSocio").textContent = "Editar sócio"; window.scrollTo({top:0, behavior:"smooth"});
   }
-  if (del && await askConfirm("Excluir este sócio? O histórico de vendas é mantido.")) {
+  if (del && confirm("Excluir este sócio? O histórico de vendas é mantido.")) {
     const { error } = await sb.from("socios").delete().eq("id", del.dataset.delS);
     if (error) toast("Não foi possível excluir."); else { toast("Sócio excluído"); carregar(); }
   }
@@ -449,7 +461,7 @@ function renderVendas(){
 }
 $("#listaVendas").addEventListener("click", async e => {
   const del = e.target.closest("[data-del-v]");
-  if (del && await askConfirm("Excluir esta venda? A divisão de lucro dela também será removida.")) {
+  if (del && confirm("Excluir esta venda? A divisão de lucro dela também será removida.")) {
     const { error } = await sb.from("vendas").delete().eq("id", del.dataset.delV);
     if (error) toast("Não foi possível excluir."); else { toast("Venda excluída"); carregar(); }
   }
@@ -479,6 +491,8 @@ function renderPainel(){
   const fat = f.reduce((a, v) => a + Number(v.faturamento), 0);
   const lucro = f.reduce((a, v) => a + Number(v.lucro), 0);
   const un = f.reduce((a, v) => a + v.quantidade, 0);
+  const inv = f.reduce((a, v) => a + Number(v.preco_custo) * v.quantidade, 0);
+  $("#sInv").textContent = brl(inv);
   $("#sFat").textContent = brl(fat);
   $("#sLucro").textContent = brl(lucro);
   $("#sLucro").className = "v " + (lucro < 0 ? "neg" : "pos");
@@ -493,10 +507,25 @@ function renderPainel(){
     <div class="row"><div><div class="t">${esc(n)}</div><div class="s">${pct(mapa[n].perc)} de participação</div></div>
     <div class="t ${mapa[n].valor < 0 ? "neg" : "pos"}" style="font-size:20px">${brl(r2(mapa[n].valor))}</div></div>`).join("")
     : '<div class="empty">Sem vendas neste período.</div>';
+
+  const ord = [...f].sort((a, b) => a.data.localeCompare(b.data) || String(a.created_at).localeCompare(String(b.created_at)));
+  $("#listaPainel").innerHTML = ord.length ? ord.map((v, i) => {
+    const invest = Number(v.preco_custo) * v.quantidade;
+    return `<div class="vrow">
+      <div class="vtop"><div class="num">${i + 1}</div>
+        <div style="min-width:0"><div class="t">${esc(v.cliente)}</div>
+        <div class="s">${dataBR(v.data)} · ${esc(v.produto_nome)} × ${v.quantidade}</div></div></div>
+      <div class="vvals">
+        <div><span>Investido</span><b>${brl(invest)}</b></div>
+        <div><span>Vendido</span><b>${brl(v.faturamento)}</b></div>
+        <div><span>Ganho</span><b class="${v.lucro < 0 ? "neg" : "pos"}">${brl(v.lucro)}</b></div>
+      </div></div>`;
+  }).join("") + `<div class="vtotal"><span>Total: ${ord.length} venda(s) · ${un} unid.</span><span>Investido ${brl(inv)} · Ganho <span class="${lucro < 0 ? "neg" : "pos"}">${brl(lucro)}</span></span></div>`
+  : '<div class="empty">Sem vendas neste período.</div>';
 }
 
 previewProduto();
 iniciar();
 </script>
-
-</body></html>
+</body>
+</html>

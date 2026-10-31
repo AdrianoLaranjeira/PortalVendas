@@ -137,6 +137,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <nav class="tabs">
       <button class="tab active" data-tab="painel">Painel</button>
       <button class="tab" data-tab="vendas">Vendas</button>
+      <button class="tab" data-tab="caixa">Caixa</button>
       <button class="tab" data-tab="produtos">Produtos</button>
       <button class="tab" data-tab="socios">Sócios</button>
     </nav>
@@ -162,6 +163,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="glass stat"><div class="k">Lucro</div><div class="v pos" id="sLucro">R$ 0,00</div></div>
         <div class="glass stat"><div class="k">Vendas / Unidades</div><div class="v" id="sQtd">0</div></div>
       </div>
+      <div class="grid g4" style="margin-bottom:6px">
+        <div class="glass stat"><div class="k">Capital inicial</div><div class="v" id="pCap">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Retiradas</div><div class="v neg" id="pRet">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Caixa atual</div><div class="v" id="pCaixa">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Estoque (a custo)</div><div class="v" id="pEst">R$ 0,00</div></div>
+      </div>
+      <p class="muted" style="font-size:12px;margin:0 4px 16px">Caixa = capital inicial + faturamento de todas as vendas − compras de estoque − retiradas. O estoque é valorizado a custo. Esses valores não dependem do período escolhido.</p>
       <div class="glass card">
         <h2>Quanto cabe a cada sócio</h2>
         <div id="porSocio"></div>
@@ -193,6 +201,56 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <h2>Histórico</h2>
         <div id="listaVendas"></div>
       </div>
+    </section>
+
+    <!-- CAIXA -->
+    <section id="v-caixa" class="view hidden">
+      <h1>Caixa</h1>
+      <div id="avisoCaixa"></div>
+      <div class="grid g3" style="margin-bottom:16px">
+        <div class="glass stat"><div class="k">Capital inicial</div><div class="v" id="cCap">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Faturamento</div><div class="v" id="cFat">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Compras de estoque</div><div class="v" id="cComp">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Retiradas</div><div class="v neg" id="cRet">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Caixa atual</div><div class="v" id="cCaixa">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Estoque (a custo)</div><div class="v" id="cEst">R$ 0,00</div></div>
+      </div>
+      <form class="glass card" id="formCaixa">
+        <h2>Novo lançamento</h2>
+        <div class="grid" style="gap:12px">
+          <div class="grid g2 keep">
+            <div><label>Tipo</label>
+              <select id="kTipo"><option value="retirada">Retirada do caixa</option><option value="aporte">Aporte / capital inicial</option></select></div>
+            <div><label>Valor</label><input id="kValor" type="number" min="0.01" step="0.01" inputmode="decimal" required></div>
+          </div>
+          <div class="grid g2 keep">
+            <div><label>Data</label><input id="kData" type="date" required></div>
+            <div><label>Sócio</label><select id="kSocio"></select></div>
+          </div>
+          <div><label>Descrição (opcional)</label><input id="kDesc" type="text" placeholder="Ex.: Capital inicial, retirada de lucro"></div>
+        </div>
+        <button class="btn" style="margin-top:14px" id="btnCaixa" type="submit">Lançar</button>
+      </form>
+      <form class="glass card" id="formCompra">
+        <h2>Compra de estoque</h2>
+        <div class="grid" style="gap:12px">
+          <div><label>Produto</label><select id="cProduto" required></select></div>
+          <div class="grid g2 keep">
+            <div><label>Quantidade</label><input id="cQtd" type="number" min="1" step="1" inputmode="numeric" required></div>
+            <div><label>Custo (unidade)</label><input id="cCusto" type="number" min="0" step="0.01" inputmode="decimal" required></div>
+          </div>
+          <div class="grid g2 keep">
+            <div><label>Data</label><input id="cData" type="date" required></div>
+            <div><label>Fornecedor (opcional)</label><input id="cForn" type="text"></div>
+          </div>
+        </div>
+        <div class="preview" id="cPreview">Total da compra: —</div>
+        <button class="btn" style="margin-top:14px" id="btnCompra" type="submit">Registrar compra</button>
+      </form>
+      <div class="glass card"><h2>Estoque atual</h2><div id="listaEstoque"></div></div>
+      <div class="glass card"><h2>Compras de estoque</h2><div id="listaCompras"></div></div>
+      <div class="glass card"><h2>Histórico de retiradas</h2><div id="resumoRet"></div><div id="listaRetiradas"></div></div>
+      <div class="glass card"><h2>Aportes de capital</h2><div id="listaAportes"></div></div>
     </section>
 
     <!-- PRODUTOS -->
@@ -259,7 +317,7 @@ const hoje = () => iso(new Date());
 const dataBR = s => s ? s.split("-").reverse().join("/") : "";
 const r2 = n => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
-let produtos = [], socios = [], vendas = [], periodo = "mes";
+let produtos = [], socios = [], vendas = [], caixa = [], caixaErro = false, compras = [], comprasErro = false, periodo = "mes";
 
 function toast(msg){
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
@@ -276,6 +334,8 @@ function mostrarLogin(){ $("#app").classList.add("hidden"); $("#login").classLis
 async function entrar(){
   $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
   $("#vData").value = hoje();
+  $("#kData").value = hoje();
+  $("#cData").value = hoje();
   await carregar();
 }
 $("#loginForm").addEventListener("submit", async e => {
@@ -305,9 +365,13 @@ async function carregar(){
   ]);
   if (p.error || s.error || v.error) { toast("Erro ao carregar dados. Verifique seu acesso."); console.error(p.error, s.error, v.error); return; }
   produtos = p.data; socios = s.data; vendas = v.data;
+  const c = await sb.from("caixa_mov").select("*").order("data", {ascending:false}).order("created_at", {ascending:false});
+  if (c.error) { caixa = []; caixaErro = true; console.error(c.error); } else { caixa = c.data; caixaErro = false; }
+  const cp = await sb.from("compras").select("*").order("data", {ascending:false}).order("created_at", {ascending:false});
+  if (cp.error) { compras = []; comprasErro = true; console.error(cp.error); } else { compras = cp.data; comprasErro = false; }
   renderTudo();
 }
-function renderTudo(){ renderProdutos(); renderSocios(); renderSelectProdutos(); renderVendas(); renderPainel(); previewVenda(); }
+function renderTudo(){ renderProdutos(); renderSocios(); renderSelectProdutos(); renderVendas(); renderCaixa(); renderPainel(); previewVenda(); }
 
 // ====== NAVEGAÇÃO ======
 $$(".tab").forEach(b => b.addEventListener("click", () => {
@@ -523,6 +587,134 @@ function renderPainel(){
   }).join("") + `<div class="vtotal"><span>Total: ${ord.length} venda(s) · ${un} unid.</span><span>Investido ${brl(inv)} · Ganho <span class="${lucro < 0 ? "neg" : "pos"}">${brl(lucro)}</span></span></div>`
   : '<div class="empty">Sem vendas neste período.</div>';
 }
+
+// ====== CAIXA ======
+function totaisCaixa(){
+  const cap = caixa.filter(m => m.tipo === "aporte").reduce((a, m) => a + Number(m.valor), 0);
+  const ret = caixa.filter(m => m.tipo === "retirada").reduce((a, m) => a + Number(m.valor), 0);
+  const lucro = vendas.reduce((a, v) => a + Number(v.lucro), 0);
+  const fat = vendas.reduce((a, v) => a + Number(v.faturamento), 0);
+  const comp = compras.reduce((a, c) => a + Number(c.total), 0);
+  const est = estoque().reduce((a, i) => a + i.valor, 0);
+  return { cap, ret, lucro, fat, comp, est, caixa: cap + fat - comp - ret };
+}
+function estoque(){
+  const mapa = {};
+  compras.forEach(c => {
+    const k = c.produto_id || c.produto_nome;
+    const i = mapa[k] = mapa[k] || { nome: c.produto_nome, comp: 0, gasto: 0, vend: 0 };
+    i.comp += c.quantidade; i.gasto += Number(c.total);
+  });
+  vendas.forEach(v => { const k = v.produto_id || v.produto_nome; if (mapa[k]) mapa[k].vend += v.quantidade; });
+  return Object.values(mapa).map(i => {
+    const q = i.comp - i.vend, medio = i.comp ? i.gasto / i.comp : 0;
+    return { ...i, qtd: q, valor: Math.max(q, 0) * medio };
+  });
+}
+function renderEstoque(){
+  const sel = $("#cProduto"), atual = sel.value;
+  sel.innerHTML = '<option value="" disabled selected>Selecione…</option>' + produtos.map(p => `<option value="${p.id}">${esc(p.nome)}</option>`).join("");
+  if (atual && produtos.some(p => p.id === atual)) sel.value = atual;
+  const est = estoque();
+  $("#listaEstoque").innerHTML = est.length ? est.map(i => `<div class="row">
+    <div><div class="t">${esc(i.nome)}</div><div class="s">Comprado ${i.comp} · Vendido ${i.vend}${i.qtd < 0 ? " · registre as compras que faltam" : ""}</div></div>
+    <div style="text-align:right"><div class="t ${i.qtd < 0 ? "neg" : ""}">${i.qtd} un.</div><div class="s">${brl(i.valor)} a custo</div></div></div>`).join("")
+    : '<div class="empty">Registre as compras para acompanhar o estoque.</div>';
+  $("#listaCompras").innerHTML = compras.length ? compras.map(c => `<div class="row">
+    <div style="min-width:0"><div class="t">${esc(c.produto_nome)} <span class="muted" style="font-weight:500">× ${c.quantidade}</span></div>
+    <div class="s">${dataBR(c.data)} · ${brl(c.custo_unit)} cada${c.fornecedor ? " · " + esc(c.fornecedor) : ""}</div>
+    <div class="s">Total <b>${brl(c.total)}</b></div></div>
+    <div class="actions"><button class="btn danger small" data-del-c="${c.id}">Excluir</button></div></div>`).join("")
+    : '<div class="empty">Nenhuma compra registrada.</div>';
+}
+function linhaCaixa(m, sinal){
+  const quem = m.socio_nome ? " · " + esc(m.socio_nome) : "";
+  const desc = m.descricao ? `<div class="s">${esc(m.descricao)}</div>` : "";
+  return `<div class="row">
+    <div style="min-width:0"><div class="t ${sinal < 0 ? "neg" : "pos"}">${sinal < 0 ? "− " : "+ "}${brl(m.valor)}</div>
+    <div class="s">${dataBR(m.data)}${quem}</div>${desc}</div>
+    <div class="actions"><button class="btn danger small" data-del-k="${m.id}">Excluir</button></div>
+  </div>`;
+}
+function renderCaixa(){
+  $("#avisoCaixa").innerHTML = caixaErro
+    ? '<div class="warn">A tabela do caixa ainda não existe no banco. Rode o script SQL do caixa no Supabase e recarregue.</div>'
+    : (comprasErro ? '<div class="warn">A tabela de compras de estoque ainda não existe. Rode o SQL das compras no Supabase e recarregue.</div>' : "");
+  const t = totaisCaixa();
+  $("#cCap").textContent = brl(t.cap); $("#cFat").textContent = brl(t.fat); $("#cComp").textContent = brl(t.comp);
+  $("#cRet").textContent = brl(t.ret); $("#cEst").textContent = brl(t.est); $("#pEst").textContent = brl(t.est);
+  $("#cCaixa").textContent = brl(t.caixa); $("#cCaixa").className = "v " + (t.caixa < 0 ? "neg" : "pos");
+  $("#pCap").textContent = brl(t.cap); $("#pRet").textContent = brl(t.ret);
+  $("#pCaixa").textContent = brl(t.caixa); $("#pCaixa").className = "v " + (t.caixa < 0 ? "neg" : "pos");
+
+  const sel = $("#kSocio"), atual = sel.value;
+  sel.innerHTML = '<option value="">Sem sócio</option>' + socios.map(s => `<option value="${esc(s.nome)}">${esc(s.nome)}</option>`).join("");
+  if (atual) sel.value = atual;
+
+  const rets = caixa.filter(m => m.tipo === "retirada"), aps = caixa.filter(m => m.tipo === "aporte");
+  const porSocio = {};
+  rets.forEach(m => { const n = m.socio_nome || "Sem sócio"; porSocio[n] = (porSocio[n] || 0) + Number(m.valor); });
+  const nomes = Object.keys(porSocio);
+  $("#resumoRet").innerHTML = nomes.length
+    ? `<div class="preview" style="margin:0 0 6px">${nomes.map(n => `${esc(n)}: <b>${brl(porSocio[n])}</b>`).join(" · ")}</div>` : "";
+  $("#listaRetiradas").innerHTML = rets.length ? rets.map(m => linhaCaixa(m, -1)).join("") : '<div class="empty">Nenhuma retirada registrada.</div>';
+  $("#listaAportes").innerHTML = aps.length ? aps.map(m => linhaCaixa(m, 1)).join("") : '<div class="empty">Nenhum aporte registrado. Lance o capital inicial acima.</div>';
+  renderEstoque();
+}
+$("#formCaixa").addEventListener("submit", async e => {
+  e.preventDefault();
+  const obj = {
+    tipo: $("#kTipo").value, valor: parseFloat($("#kValor").value), data: $("#kData").value,
+    socio_nome: $("#kSocio").value || null, descricao: $("#kDesc").value.trim() || null
+  };
+  $("#btnCaixa").disabled = true;
+  const { error } = await sb.from("caixa_mov").insert(obj);
+  $("#btnCaixa").disabled = false;
+  if (error) { toast("Não foi possível lançar. O SQL do caixa foi executado?"); console.error(error); return; }
+  toast(obj.tipo === "retirada" ? "Retirada registrada" : "Aporte registrado");
+  $("#kValor").value = ""; $("#kDesc").value = ""; carregar();
+});
+$("#v-caixa").addEventListener("click", async e => {
+  const del = e.target.closest("[data-del-k]");
+  if (del && confirm("Excluir este lançamento do caixa?")) {
+    const { error } = await sb.from("caixa_mov").delete().eq("id", del.dataset.delK);
+    if (error) toast("Não foi possível excluir."); else { toast("Lançamento excluído"); carregar(); }
+  }
+});
+
+// ====== COMPRAS DE ESTOQUE ======
+function previewCompra(){
+  const q = parseInt($("#cQtd").value), c = parseFloat($("#cCusto").value);
+  $("#cPreview").innerHTML = (isNaN(q) || isNaN(c)) ? "Total da compra: —" : `Total da compra: <b>${brl(q * c)}</b>`;
+}
+["#cQtd", "#cCusto"].forEach(s => $(s).addEventListener("input", previewCompra));
+$("#cProduto").addEventListener("change", () => {
+  const p = produtos.find(x => x.id === $("#cProduto").value);
+  if (p) $("#cCusto").value = p.preco_custo;
+  previewCompra();
+});
+$("#formCompra").addEventListener("submit", async e => {
+  e.preventDefault();
+  const p = produtos.find(x => x.id === $("#cProduto").value);
+  if (!p) { toast("Escolha um produto."); return; }
+  const obj = {
+    data: $("#cData").value, produto_id: p.id, produto_nome: p.nome, quantidade: parseInt($("#cQtd").value),
+    custo_unit: parseFloat($("#cCusto").value), fornecedor: $("#cForn").value.trim() || null
+  };
+  $("#btnCompra").disabled = true;
+  const { error } = await sb.from("compras").insert(obj);
+  $("#btnCompra").disabled = false;
+  if (error) { toast("Não foi possível registrar. O SQL das compras foi executado?"); console.error(error); return; }
+  toast("Compra registrada");
+  $("#cQtd").value = ""; $("#cCusto").value = ""; $("#cForn").value = ""; $("#cProduto").value = ""; previewCompra(); carregar();
+});
+$("#v-caixa").addEventListener("click", async e => {
+  const del = e.target.closest("[data-del-c]");
+  if (del && confirm("Excluir esta compra de estoque?")) {
+    const { error } = await sb.from("compras").delete().eq("id", del.dataset.delC);
+    if (error) toast("Não foi possível excluir."); else { toast("Compra excluída"); carregar(); }
+  }
+});
 
 previewProduto();
 iniciar();

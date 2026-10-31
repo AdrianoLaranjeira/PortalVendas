@@ -212,7 +212,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="glass stat"><div class="k">Estoque (a custo)</div><div class="v" id="cEst">R$ 0,00</div></div>
         <div class="glass stat"><div class="k">Investido (aparelhos vendidos)</div><div class="v" id="cInv">R$ 0,00</div></div>
         <div class="glass stat"><div class="k">Lucro total</div><div class="v pos" id="cLucro">R$ 0,00</div></div>
-        <div class="glass stat"><div class="k">Vendas / Unidades</div><div class="v" id="cQtd">0</div></div>
+        <div class="glass stat"><div class="k">Vendas / Unidades</div><div class="v" id="cVendasUn">0</div></div>
       </div>
       <form class="glass card" id="formCaixa">
         <h2>Novo lançamento</h2>
@@ -653,7 +653,7 @@ function renderCaixa(){
   $("#cCap").textContent = brl(t.cap); $("#cFat").textContent = brl(t.fat); $("#cComp").textContent = brl(t.comp);
   $("#cRet").textContent = brl(t.ret); $("#cEst").textContent = brl(t.est); $("#pEst").textContent = brl(t.est);
   $("#cCaixa").textContent = brl(t.caixa); $("#cCaixa").className = "v " + (t.caixa < 0 ? "neg" : "pos");
-  $("#cInv").textContent = brl(t.inv); $("#cQtd").textContent = t.nv + " / " + t.un;
+  $("#cInv").textContent = brl(t.inv); $("#cVendasUn").textContent = t.nv + " / " + t.un;
   $("#cLucro").textContent = brl(t.lucro); $("#cLucro").className = "v " + (t.lucro < 0 ? "neg" : "pos");
   $("#pLucro").textContent = brl(t.lucro); $("#pLucro").className = "v " + (t.lucro < 0 ? "neg" : "pos");
   $("#pCap").textContent = brl(t.cap); $("#pRet").textContent = brl(t.ret);

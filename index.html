@@ -35,6 +35,7 @@ body::before{
     radial-gradient(600px 500px at 50% 110%, rgba(50,173,230,.22), transparent 60%);
 }
 .hidden{display:none!important}
+body.nao-admin .admin-only{display:none!important}
 .glass{
   background:var(--card); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow);
   -webkit-backdrop-filter:saturate(180%) blur(24px); backdrop-filter:saturate(180%) blur(24px);
@@ -277,7 +278,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <section id="v-socios" class="view hidden">
       <h1>Sócios</h1>
       <div id="avisoSocios"></div>
-      <form class="glass card" id="formSocio">
+      <form class="glass card admin-only" id="formSocio">
         <h2 id="tituloSocio">Novo sócio</h2>
         <input type="hidden" id="sId">
         <div class="grid g2 keep">
@@ -303,6 +304,8 @@ const SUPABASE_URL = "https://fwklhaotcejwdcskwnlp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3a2xoYW90Y2Vqd2Rjc2t3bmxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzMDk5MjUsImV4cCI6MjEwODg4NTkyNX0.qXgXZhDrxZmzKuTNjA8IpdADZZD8m8LrRXokP-v29wA";
 // ==========================
 
+const ADMINS = ["adrianolaranjeira@hotmail.com", "dinhopiv@hotmail.com"];
+let isAdmin = false;
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -331,6 +334,12 @@ async function iniciar(){
 function mostrarLogin(){ $("#app").classList.add("hidden"); $("#login").classList.remove("hidden"); }
 async function entrar(){
   $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+  const { data: u } = await sb.auth.getUser();
+  isAdmin = ADMINS.includes(((u && u.user && u.user.email) || "").toLowerCase());
+  document.body.classList.toggle("nao-admin", !isAdmin);
+  $("#kTipo").innerHTML = isAdmin
+    ? '<option value="retirada">Retirada do caixa</option><option value="aporte">Aporte / capital inicial</option>'
+    : '<option value="retirada">Retirada do caixa</option>';
   $("#vData").value = hoje();
   $("#kData").value = hoje();
   $("#cData").value = hoje();
@@ -408,7 +417,7 @@ function renderProdutos(){
       <div class="s">Custo ${brl(p.preco_custo)} · Venda ${brl(p.preco_venda)} · <span class="pill">${pct(p.margem_pct)}</span></div></div>
       <div class="actions">
         <button class="btn ghost small" data-edit-p="${p.id}">Editar</button>
-        <button class="btn danger small" data-del-p="${p.id}">Excluir</button>
+        <button class="btn danger small admin-only" data-del-p="${p.id}">Excluir</button>
       </div>
     </div>`).join("");
 }
@@ -447,7 +456,7 @@ function renderSocios(){
   el.innerHTML = socios.map(s => `
     <div class="row">
       <div><div class="t">${esc(s.nome)}</div><div class="s"><span class="pill">${pct(s.percentual)}</span></div></div>
-      <div class="actions">
+      <div class="actions admin-only">
         <button class="btn ghost small" data-edit-s="${s.id}">Editar</button>
         <button class="btn danger small" data-del-s="${s.id}">Excluir</button>
       </div>
@@ -517,7 +526,7 @@ function renderVendas(){
         <div class="s">Fat. ${brl(v.faturamento)} · Lucro <b class="${v.lucro < 0 ? "neg" : "pos"}">${brl(v.lucro)}</b></div>
         <div class="s">${div}</div>
       </div>
-      <div class="actions"><button class="btn danger small" data-del-v="${v.id}">Excluir</button></div>
+      <div class="actions admin-only"><button class="btn danger small" data-del-v="${v.id}">Excluir</button></div>
     </div>`;
   }).join("");
 }
@@ -624,7 +633,7 @@ function renderEstoque(){
     <div style="min-width:0"><div class="t">${esc(c.produto_nome)} <span class="muted" style="font-weight:500">× ${c.quantidade}</span></div>
     <div class="s">${dataBR(c.data)} · ${brl(c.custo_unit)} cada${c.fornecedor ? " · " + esc(c.fornecedor) : ""}</div>
     <div class="s">Total <b>${brl(c.total)}</b></div></div>
-    <div class="actions"><button class="btn danger small" data-del-c="${c.id}">Excluir</button></div></div>`).join("")
+    <div class="actions admin-only"><button class="btn danger small" data-del-c="${c.id}">Excluir</button></div></div>`).join("")
     : '<div class="empty">Nenhuma compra registrada.</div>';
 }
 function linhaCaixa(m, sinal){
@@ -633,7 +642,7 @@ function linhaCaixa(m, sinal){
   return `<div class="row">
     <div style="min-width:0"><div class="t ${sinal < 0 ? "neg" : "pos"}">${sinal < 0 ? "− " : "+ "}${brl(m.valor)}</div>
     <div class="s">${dataBR(m.data)}${quem}</div>${desc}</div>
-    <div class="actions"><button class="btn danger small" data-del-k="${m.id}">Excluir</button></div>
+    <div class="actions admin-only"><button class="btn danger small" data-del-k="${m.id}">Excluir</button></div>
   </div>`;
 }
 function renderCaixa(){

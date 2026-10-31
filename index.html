@@ -322,7 +322,7 @@ let produtos = [], socios = [], vendas = [], caixa = [], caixaErro = false, comp
 
 function toast(msg){
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2600);
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), Math.max(2600, msg.length * 90));
 }
 
 // ====== LOGIN ======
@@ -405,7 +405,7 @@ $("#formProduto").addEventListener("submit", async e => {
   $("#btnProduto").disabled = true;
   const { error } = id ? await sb.from("produtos").update(obj).eq("id", id) : await sb.from("produtos").insert(obj);
   $("#btnProduto").disabled = false;
-  if (error) { toast("Não foi possível salvar o produto."); console.error(error); return; }
+  if (error) { toast("Erro ao salvar produto: " + (error.message || error.code)); console.error(error); return; }
   toast(id ? "Produto atualizado" : "Produto cadastrado"); limparProduto(); carregar();
 });
 function renderProdutos(){
@@ -430,7 +430,7 @@ $("#listaProdutos").addEventListener("click", async e => {
   }
   if (del && confirm("Excluir este produto? As vendas já lançadas continuam no histórico.")) {
     const { error } = await sb.from("produtos").delete().eq("id", del.dataset.delP);
-    if (error) toast("Não foi possível excluir."); else { toast("Produto excluído"); carregar(); }
+    if (error) toast("Erro ao excluir: " + (error.message || error.code)); else { toast("Produto excluído"); carregar(); }
   }
 });
 
@@ -444,7 +444,7 @@ $("#formSocio").addEventListener("submit", async e => {
   $("#btnSocio").disabled = true;
   const { error } = id ? await sb.from("socios").update(obj).eq("id", id) : await sb.from("socios").insert(obj);
   $("#btnSocio").disabled = false;
-  if (error) { toast("Não foi possível salvar o sócio."); console.error(error); return; }
+  if (error) { toast("Erro ao salvar sócio: " + (error.message || error.code)); console.error(error); return; }
   toast("Sócio salvo"); limparSocio(); carregar();
 });
 function renderSocios(){
@@ -471,7 +471,7 @@ $("#listaSocios").addEventListener("click", async e => {
   }
   if (del && confirm("Excluir este sócio? O histórico de vendas é mantido.")) {
     const { error } = await sb.from("socios").delete().eq("id", del.dataset.delS);
-    if (error) toast("Não foi possível excluir."); else { toast("Sócio excluído"); carregar(); }
+    if (error) toast("Erro ao excluir: " + (error.message || error.code)); else { toast("Sócio excluído"); carregar(); }
   }
 });
 
@@ -509,7 +509,7 @@ $("#formVenda").addEventListener("submit", async e => {
   $("#btnVenda").disabled = true;
   const { error } = await sb.from("vendas").insert(obj);
   $("#btnVenda").disabled = false;
-  if (error) { toast("Não foi possível lançar a venda."); console.error(error); return; }
+  if (error) { toast("Erro ao lançar venda: " + (error.message || error.code)); console.error(error); return; }
   toast("Venda lançada e lucro dividido");
   $("#vCliente").value = ""; $("#vQtd").value = 1; $("#vProduto").value = ""; $("#vPreco").value = "";
   carregar();
@@ -534,7 +534,7 @@ $("#listaVendas").addEventListener("click", async e => {
   const del = e.target.closest("[data-del-v]");
   if (del && confirm("Excluir esta venda? A divisão de lucro dela também será removida.")) {
     const { error } = await sb.from("vendas").delete().eq("id", del.dataset.delV);
-    if (error) toast("Não foi possível excluir."); else { toast("Venda excluída"); carregar(); }
+    if (error) toast("Erro ao excluir: " + (error.message || error.code)); else { toast("Venda excluída"); carregar(); }
   }
 });
 
@@ -682,7 +682,7 @@ $("#formCaixa").addEventListener("submit", async e => {
   $("#btnCaixa").disabled = true;
   const { error } = await sb.from("caixa_mov").insert(obj);
   $("#btnCaixa").disabled = false;
-  if (error) { toast("Não foi possível lançar. O SQL do caixa foi executado?"); console.error(error); return; }
+  if (error) { toast("Erro ao lançar: " + (error.message || error.code)); console.error(error); return; }
   toast(obj.tipo === "retirada" ? "Retirada registrada" : "Aporte registrado");
   $("#kValor").value = ""; $("#kDesc").value = ""; carregar();
 });
@@ -690,7 +690,7 @@ $("#v-caixa").addEventListener("click", async e => {
   const del = e.target.closest("[data-del-k]");
   if (del && confirm("Excluir este lançamento do caixa?")) {
     const { error } = await sb.from("caixa_mov").delete().eq("id", del.dataset.delK);
-    if (error) toast("Não foi possível excluir."); else { toast("Lançamento excluído"); carregar(); }
+    if (error) toast("Erro ao excluir: " + (error.message || error.code)); else { toast("Lançamento excluído"); carregar(); }
   }
 });
 
@@ -716,7 +716,7 @@ $("#formCompra").addEventListener("submit", async e => {
   $("#btnCompra").disabled = true;
   const { error } = await sb.from("compras").insert(obj);
   $("#btnCompra").disabled = false;
-  if (error) { toast("Não foi possível registrar. O SQL das compras foi executado?"); console.error(error); return; }
+  if (error) { toast("Erro ao registrar compra: " + (error.message || error.code)); console.error(error); return; }
   toast("Compra registrada");
   $("#cQtd").value = ""; $("#cCusto").value = ""; $("#cForn").value = ""; $("#cProduto").value = ""; previewCompra(); carregar();
 });
@@ -724,7 +724,7 @@ $("#v-caixa").addEventListener("click", async e => {
   const del = e.target.closest("[data-del-c]");
   if (del && confirm("Excluir esta compra de estoque?")) {
     const { error } = await sb.from("compras").delete().eq("id", del.dataset.delC);
-    if (error) toast("Não foi possível excluir."); else { toast("Compra excluída"); carregar(); }
+    if (error) toast("Erro ao excluir: " + (error.message || error.code)); else { toast("Compra excluída"); carregar(); }
   }
 });
 

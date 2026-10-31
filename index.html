@@ -145,31 +145,26 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- PAINEL -->
     <section id="v-painel" class="view">
       <h1>Painel</h1>
+      <div class="grid g3" style="margin-bottom:6px">
+        <div class="glass stat"><div class="k">Capital inicial</div><div class="v" id="pCap">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Caixa atual</div><div class="v" id="pCaixa">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Lucro total</div><div class="v pos" id="pLucro">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Retiradas</div><div class="v neg" id="pRet">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Estoque (a custo)</div><div class="v" id="pEst">R$ 0,00</div></div>
+      </div>
+      <p class="muted" style="font-size:12px;margin:0 4px 16px">Esses valores somam todo o histórico e não dependem do período escolhido abaixo.</p>
       <div class="chips" id="chips">
         <button class="chip" data-p="hoje">Hoje</button>
         <button class="chip" data-p="7d">7 dias</button>
-        <button class="chip active" data-p="mes">Este mês</button>
+        <button class="chip" data-p="mes">Este mês</button>
         <button class="chip" data-p="ano">Este ano</button>
-        <button class="chip" data-p="tudo">Tudo</button>
+        <button class="chip active" data-p="tudo">Tudo</button>
         <button class="chip" data-p="custom">Período</button>
       </div>
       <div id="customRange" class="grid g2 keep hidden" style="margin-bottom:14px">
         <div><label>De</label><input type="date" id="dDe"></div>
         <div><label>Até</label><input type="date" id="dAte"></div>
       </div>
-      <div class="grid g4" style="margin-bottom:16px">
-        <div class="glass stat"><div class="k">Investido</div><div class="v" id="sInv">R$ 0,00</div></div>
-        <div class="glass stat"><div class="k">Faturamento</div><div class="v" id="sFat">R$ 0,00</div></div>
-        <div class="glass stat"><div class="k">Lucro</div><div class="v pos" id="sLucro">R$ 0,00</div></div>
-        <div class="glass stat"><div class="k">Vendas / Unidades</div><div class="v" id="sQtd">0</div></div>
-      </div>
-      <div class="grid g4" style="margin-bottom:6px">
-        <div class="glass stat"><div class="k">Capital inicial</div><div class="v" id="pCap">R$ 0,00</div></div>
-        <div class="glass stat"><div class="k">Retiradas</div><div class="v neg" id="pRet">R$ 0,00</div></div>
-        <div class="glass stat"><div class="k">Caixa atual</div><div class="v" id="pCaixa">R$ 0,00</div></div>
-        <div class="glass stat"><div class="k">Estoque (a custo)</div><div class="v" id="pEst">R$ 0,00</div></div>
-      </div>
-      <p class="muted" style="font-size:12px;margin:0 4px 16px">Caixa = capital inicial + faturamento de todas as vendas − compras de estoque − retiradas. O estoque é valorizado a custo. Esses valores não dependem do período escolhido.</p>
       <div class="glass card">
         <h2>Quanto cabe a cada sócio</h2>
         <div id="porSocio"></div>
@@ -214,6 +209,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="glass stat"><div class="k">Retiradas</div><div class="v neg" id="cRet">R$ 0,00</div></div>
         <div class="glass stat"><div class="k">Caixa atual</div><div class="v" id="cCaixa">R$ 0,00</div></div>
         <div class="glass stat"><div class="k">Estoque (a custo)</div><div class="v" id="cEst">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Investido (aparelhos vendidos)</div><div class="v" id="cInv">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Lucro total</div><div class="v pos" id="cLucro">R$ 0,00</div></div>
+        <div class="glass stat"><div class="k">Vendas / Unidades</div><div class="v" id="cQtd">0</div></div>
       </div>
       <form class="glass card" id="formCaixa">
         <h2>Novo lançamento</h2>
@@ -317,7 +315,7 @@ const hoje = () => iso(new Date());
 const dataBR = s => s ? s.split("-").reverse().join("/") : "";
 const r2 = n => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
-let produtos = [], socios = [], vendas = [], caixa = [], caixaErro = false, compras = [], comprasErro = false, periodo = "mes";
+let produtos = [], socios = [], vendas = [], caixa = [], caixaErro = false, compras = [], comprasErro = false, periodo = "tudo";
 
 function toast(msg){
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
@@ -556,11 +554,6 @@ function renderPainel(){
   const lucro = f.reduce((a, v) => a + Number(v.lucro), 0);
   const un = f.reduce((a, v) => a + v.quantidade, 0);
   const inv = f.reduce((a, v) => a + Number(v.preco_custo) * v.quantidade, 0);
-  $("#sInv").textContent = brl(inv);
-  $("#sFat").textContent = brl(fat);
-  $("#sLucro").textContent = brl(lucro);
-  $("#sLucro").className = "v " + (lucro < 0 ? "neg" : "pos");
-  $("#sQtd").textContent = f.length + " / " + un;
   const mapa = {};
   f.forEach(v => (v.vendas_divisao || []).forEach(d => {
     mapa[d.socio_nome] = mapa[d.socio_nome] || { valor: 0, perc: d.percentual };
@@ -580,6 +573,11 @@ function renderPainel(){
         <div style="min-width:0"><div class="t">${esc(v.cliente)}</div>
         <div class="s">${dataBR(v.data)} · ${esc(v.produto_nome)} × ${v.quantidade}</div></div></div>
       <div class="vvals">
+        <div><span>Compra (un.)</span><b>${brl(v.preco_custo)}</b></div>
+        <div><span>Venda (un.)</span><b>${brl(v.preco_venda)}</b></div>
+        <div><span>Lucro (un.)</span><b class="${v.preco_venda - v.preco_custo < 0 ? "neg" : "pos"}">${brl(v.preco_venda - v.preco_custo)}</b></div>
+      </div>
+      <div class="vvals">
         <div><span>Investido</span><b>${brl(invest)}</b></div>
         <div><span>Vendido</span><b>${brl(v.faturamento)}</b></div>
         <div><span>Ganho</span><b class="${v.lucro < 0 ? "neg" : "pos"}">${brl(v.lucro)}</b></div>
@@ -596,7 +594,9 @@ function totaisCaixa(){
   const fat = vendas.reduce((a, v) => a + Number(v.faturamento), 0);
   const comp = compras.reduce((a, c) => a + Number(c.total), 0);
   const est = estoque().reduce((a, i) => a + i.valor, 0);
-  return { cap, ret, lucro, fat, comp, est, caixa: cap + fat - comp - ret };
+  const inv = vendas.reduce((a, v) => a + Number(v.preco_custo) * v.quantidade, 0);
+  const un = vendas.reduce((a, v) => a + v.quantidade, 0);
+  return { cap, ret, lucro, fat, comp, est, inv, un, nv: vendas.length, caixa: cap + fat - comp - ret };
 }
 function estoque(){
   const mapa = {};
@@ -644,6 +644,9 @@ function renderCaixa(){
   $("#cCap").textContent = brl(t.cap); $("#cFat").textContent = brl(t.fat); $("#cComp").textContent = brl(t.comp);
   $("#cRet").textContent = brl(t.ret); $("#cEst").textContent = brl(t.est); $("#pEst").textContent = brl(t.est);
   $("#cCaixa").textContent = brl(t.caixa); $("#cCaixa").className = "v " + (t.caixa < 0 ? "neg" : "pos");
+  $("#cInv").textContent = brl(t.inv); $("#cQtd").textContent = t.nv + " / " + t.un;
+  $("#cLucro").textContent = brl(t.lucro); $("#cLucro").className = "v " + (t.lucro < 0 ? "neg" : "pos");
+  $("#pLucro").textContent = brl(t.lucro); $("#pLucro").className = "v " + (t.lucro < 0 ? "neg" : "pos");
   $("#pCap").textContent = brl(t.cap); $("#pRet").textContent = brl(t.ret);
   $("#pCaixa").textContent = brl(t.caixa); $("#pCaixa").className = "v " + (t.caixa < 0 ? "neg" : "pos");
 
